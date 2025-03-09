@@ -22,7 +22,7 @@ List<Ticket> tickets = new List<Ticket>();
 List<BaggageInfo> baggage = new List<BaggageInfo>();
 List<FoodOrder> foodOrders= new List<FoodOrder>();
 
-
+//функция отсчета времени
 void CountTime()
 {
 
