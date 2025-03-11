@@ -1,4 +1,7 @@
-﻿namespace TicketOffice_CheckIn_Module
+﻿using System.Security.Claims;
+using System.Xml.Linq;
+
+namespace TicketOffice_CheckIn_Module
 {
     /// <summary>
     /// структура данных пассажира
@@ -19,24 +22,26 @@
     {
         public int Id { get; set; }
         public char Gate { get; set; }
+
+        public DateTime DepartureTime { get; set; }
         public bool IsRegistrationOpen { get; set; }
         public int AvailableSeatsEconomy { get; set; }
         public int AvailableSeatsBusiness { get; set; }
 
-        public void ReduceSeatsByClass(string cl)
+        public void ChangeSeatsByClass(string cl, int num)
         {
             if (cl == "Economy")
             {
-                AvailableSeatsEconomy--;
+                AvailableSeatsEconomy += num;
             }
             else if (cl == "Business")
             {
-                AvailableSeatsBusiness--;
+                AvailableSeatsBusiness += num;
             }
             else
             {
-                if (AvailableSeatsEconomy > 0) AvailableSeatsEconomy--;
-                else if (AvailableSeatsBusiness > 0) { AvailableSeatsBusiness--;}
+                if (AvailableSeatsEconomy > 0) AvailableSeatsEconomy += num;
+                else if (AvailableSeatsBusiness > 0) { AvailableSeatsBusiness += num;}
             }
         }
         public bool IsSuitable(Passenger p)
@@ -68,6 +73,7 @@
         public char Gate { get; set; }
         public string Class { get; set; }
         public string Food { get; set; }
+
 
         public Ticket (int pId, int flId, char g, string c, string f)
         {
@@ -139,6 +145,34 @@
             Name = name;
             FlightID = flightId;
             Class = cl;
+        }
+    }
+
+    public class ReturnTicketRequest
+    {
+        public int PassengerID { get; set; }
+        public int FlightID { get; set; }
+
+        public ReturnTicketRequest(int passengerId, int flightId)
+        {
+            PassengerID = passengerId;
+            FlightID = flightId;
+        }
+    }
+
+    public class BuyTicketRequest
+    {
+        public int PassengerID { get; set; }
+        public int FlightID { get; set; }
+        public string Class { get; set; }
+        public string Food { get; set; }
+
+        public BuyTicketRequest(int passengerId, int flightId, string cl, string food)
+        {
+            PassengerID = passengerId;
+            FlightID = flightId;
+            Class = cl;
+            Food = food;
         }
     }
 }
