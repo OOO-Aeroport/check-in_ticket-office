@@ -10,10 +10,9 @@ namespace TicketOffice_CheckIn_Module
     {
         public int Id { get; set; }
         public float BaggageWeight { get; set; }
-        public bool IsDisabled { get; set; }
         public bool Registration { get; set; }
-        public string FoodPreference { get; set; }
         public string ClassPreference { get; set; }
+        public string FoodPreference { get; set; }
     }
     /// <summary>
     /// Структура данных полета
@@ -23,6 +22,7 @@ namespace TicketOffice_CheckIn_Module
         public int Id { get; set; }
         public char Gate { get; set; }
 
+        public DateTime RegistrationEndTime { get; set; }
         public DateTime DepartureTime { get; set; }
         public bool IsRegistrationOpen { get; set; }
         public int AvailableSeatsEconomy { get; set; }
@@ -68,8 +68,8 @@ namespace TicketOffice_CheckIn_Module
     /// </summary>
     public class Ticket
     {
-        public int PassengerId { get; set; }
-        public int FlightId { get; set; }
+        public int PassengerID { get; set; }
+        public int FlightID { get; set; }
         public char Gate { get; set; }
         public string Class { get; set; }
         public string Food { get; set; }
@@ -77,8 +77,8 @@ namespace TicketOffice_CheckIn_Module
 
         public Ticket (int pId, int flId, char g, string c, string f)
         {
-            PassengerId = pId;
-            FlightId = flId;
+            PassengerID = pId;
+            FlightID = flId;
             Gate = g;
             Class = c;
             Food = f;
@@ -96,11 +96,11 @@ namespace TicketOffice_CheckIn_Module
     /// </summary>
     public class BaggageInfo
     {
-        public int PassengerId { get; set; }
+        public int PassengerID { get; set; }
         public float BaggageWeight { get; set; }
         public BaggageInfo(int passengerId, float baggageWeight)
         {
-            PassengerId = passengerId;
+            PassengerID = passengerId;
             BaggageWeight = baggageWeight;
         }
     }
@@ -108,7 +108,7 @@ namespace TicketOffice_CheckIn_Module
     /// <summary>
     /// структура данных еды
     /// </summary>
-    public class Food
+    public class FoodInfo
     {
         public string FoodType { get; set; }
         public int Quantity { get; set; }
@@ -117,62 +117,43 @@ namespace TicketOffice_CheckIn_Module
     public class FoodOrder
     {
         public int FlightID { get; set; }
-        public Food food { get; set; }
+        public FoodInfo Food { get; set; }
     }
 
-    public class PassengerRegistrationRequest
+    public class PassengerRequest
     {
-        public int PassengerId { get; set; }
+        public int PassengerID { get; set; }
         public Ticket Ticket { get; set; }
 
-        public PassengerRegistrationRequest(int passengerId, Ticket ticket)
+        public PassengerRequest(int passengerId, Ticket ticket)
         {
-            PassengerId = passengerId;
+            PassengerID = passengerId;
             Ticket = ticket;
+        }
+    }
+
+    public class BuyRequest
+    {
+        public Passenger Passenger { get; set; }
+        public int FlightID { get; set; }
+
+        public BuyRequest(Passenger p, int flightid)
+        {
+            Passenger = p;
+            FlightID = flightid;
         }
     }
 
     public class RegisteredPassengersEntry
     {
-        public int PassengerId { get; set; }
-        public string Name { get; set; }
+        public int PassengerID { get; set; }
         public int FlightID {  get; set; }
-        public string Class {  get; set; }
 
-        public RegisteredPassengersEntry(int passengerId, string name, int flightId, string cl )
-        {
-            PassengerId = passengerId;
-            Name = name;
-            FlightID = flightId;
-            Class = cl;
-        }
-    }
-
-    public class ReturnTicketRequest
-    {
-        public int PassengerID { get; set; }
-        public int FlightID { get; set; }
-
-        public ReturnTicketRequest(int passengerId, int flightId)
+        public RegisteredPassengersEntry(int passengerId, int flightId)
         {
             PassengerID = passengerId;
             FlightID = flightId;
         }
     }
 
-    public class BuyTicketRequest
-    {
-        public int PassengerID { get; set; }
-        public int FlightID { get; set; }
-        public string Class { get; set; }
-        public string Food { get; set; }
-
-        public BuyTicketRequest(int passengerId, int flightId, string cl, string food)
-        {
-            PassengerID = passengerId;
-            FlightID = flightId;
-            Class = cl;
-            Food = food;
-        }
-    }
 }
