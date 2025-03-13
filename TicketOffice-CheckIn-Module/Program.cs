@@ -39,8 +39,14 @@ async Task<DateTime> GetSimulationTime()
             var response = await httpClient.GetAsync(departureBoardUrl);
             if (response.IsSuccessStatusCode)
             {
-                var responseData = await response.Content.ReadAsStringAsync();
-                return DateTime.Parse(responseData);
+                string responseData = await response.Content.ReadAsStringAsync();
+                string[]datas = responseData.Split(':');
+                string shours = datas[0];
+                int.TryParse(shours, out int hours);
+                string sminutes = datas[1];
+                int.TryParse(sminutes, out int minutes);
+                DateTime res = new DateTime(0, 0, 0, hours, minutes, 0);
+                return res;
             }
             else
             {
@@ -62,13 +68,13 @@ async Task CheckRegistrationStatus()
     var simulationTime = await GetSimulationTime();
     foreach (var flight in Flights)
     {
-        if (!flight.IsRegistrationOpen && simulationTime >= flight.DepartureTime.AddHours(-3))
+        if (!flight.IsRegistrationOpen && simulationTime >= flight.GetDateTime().AddHours(-3))
         {
             // Открываем регистрацию
             flight.IsRegistrationOpen = true;
             Console.WriteLine($"Check-in for flight {flight.Id} is open.");
         }
-        if (flight.IsRegistrationOpen && simulationTime >= flight.DepartureTime.AddMinutes(-30))
+        if (flight.IsRegistrationOpen && simulationTime >= flight.GetDateTime().AddMinutes(-30))
         {
             // Завершаем регистрацию
             flight.IsRegistrationOpen = false;
@@ -159,7 +165,7 @@ bool IfBuyer(int passid)
 
 FoodOrder GetFoodOrderByFlight(int flightID)
 {
-    FoodOrder res = new FoodOrder();
+    FoodOrder res = new FoodOrder(flightID);
     for (int i = 0; i < foodOrders.Count; i++)
     {
         if (foodOrders[i].FlightID == flightID) res = foodOrders[i];
@@ -197,55 +203,55 @@ List<BaggageInfo> GetBaggageByFlight(int flightID)
 // Покупка билета
 app.MapPost("/ticket-office/buy-ticket", async context =>
 {
-    var request = await context.Request.ReadFromJsonAsync<List<BuyRequest>>();
+    var request = await context.Request.ReadFromJsonAsync<Dictionary<string,BuyRequest>>();
     PassengerResponse resp;
     if (request == null)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
        Console.WriteLine("Invalid request data.");
-        resp = new PassengerResponse(-1, StatusCodes.Status404NotFound);
+        resp = new PassengerResponse(-1, "Unsuccessful");
         return;
     }
     else
     {
         foreach (var psg in request)
         {
-            var flight = GetFlightByID(psg.FlightID, Flights);
+            var flight = GetFlightByID(psg.Value.FlightID, Flights);
             if (flight == null)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 Console.WriteLine("Impossible to buy a ticket for this flight.");
-                resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+                resp = new PassengerResponse(psg.Value.FlightID, "Unsuccessful");
                 return;
             }
 
             // Проверка времени покупки
             var simulationTime = await GetSimulationTime();
-            if (simulationTime >= flight.DepartureTime.AddHours(-3)) // Покупка заканчивается за 3 часа до вылета
+            if (simulationTime >= flight.GetDateTime().AddHours(-3)) // Покупка заканчивается за 3 часа до вылета
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 Console.WriteLine("Ticket sale for this flight is closed.");
-                resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+                resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
                 return;
             }
-            if (!flight.IsSuitable(psg.BaggageWeight))
+            if (!flight.IsSuitable(psg.Value.BaggageWeight))
             {
                 Console.WriteLine("The flight is unsuitable.");
-                resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+                resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
                 return;
             }
 
             // Создаем билет
-            Baggage.Add(new BaggageInfo(psg.PassengerID, psg.BaggageWeight, flight.Id));
+            Baggage.Add(new BaggageInfo(psg.Value.PassengerID, psg.Value.BaggageWeight, flight.Id));
             flight.AvailableSeats--;
-            resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status200OK);
+            resp = new PassengerResponse(psg.Value.PassengerID, "Successful");
 
             // Отправка билета на модуль пассажира
             string passengerModuleUrl = $"http://{PassengerModuleUrl}/passenger/ticket";
             await SendPurchaseStatus(resp, passengerModuleUrl);
 
             context.Response.StatusCode = StatusCodes.Status200OK;
-            Console.WriteLine($"Ticket for passenger {psg.PassengerID} sold successfully. Seats left: {flight.AvailableSeats}");
+            Console.WriteLine($"Ticket for passenger {psg.Value.PassengerID} sold successfully. Seats left: {flight.AvailableSeats}");
         }
     }
 });
@@ -278,44 +284,44 @@ async Task SendPurchaseStatus(PassengerResponse r, string passengerModuleUrl)
 app.MapPost("/check-in/passenger", async context =>
 {
     PassengerResponse resp;
-    var request = await context.Request.ReadFromJsonAsync<List<PassengerEntry>>();
+    var request = await context.Request.ReadFromJsonAsync<Dictionary<string, BuyRequest>>();
     if (request == null)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
         Console.WriteLine("Invalid passenger data.");
-        resp = new PassengerResponse(-1, StatusCodes.Status404NotFound);
+        resp = new PassengerResponse(-1, "Unsuccessful");
         return;
     }
     foreach (var psg in request)
     {
-        var passengerId = psg.PassengerID;
-        var flight = GetFlightByID(psg.FlightID, Flights);
+        var passengerId = psg.Value.PassengerID;
+        var flight = GetFlightByID(psg.Value.FlightID, Flights);
 
         if (flight == null || !flight.IsRegistrationOpen)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             Console.WriteLine("Check-in for the flight is closed or the flight doesn't exist.");
-            resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+            resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
             return;
         }
 
         // Проверка времени регистрации
         var simulationTime = await GetSimulationTime();
-        if (simulationTime >= flight.DepartureTime.AddMinutes(-30)) // Регистрация заканчивается в указанное время
+        if (simulationTime >= flight.GetDateTime().AddMinutes(-30)) // Регистрация заканчивается в указанное время
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             Console.WriteLine("Check-in for the flight is closed.");
-            resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+            resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
             return;
         }
 
         // Регистрируем пассажира
-        RegisteredPassengers.Add(psg);
+        RegisteredPassengers.Add(new PassengerEntry(psg.Value.PassengerID, psg.Value.FlightID));
         AddFoodOrder(flight.Id);
 
         // Отправляем ID пассажира в модуль пассажира для обновления статуса
         string passengerModuleUrl = $"http://{PassengerModuleUrl}/passenger/registration";
-        resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status200OK);
+        resp = new PassengerResponse(psg.Value.PassengerID, "Successful");
         await SendPassengerRegistrationStatus(resp, passengerModuleUrl);
 
         context.Response.StatusCode = StatusCodes.Status200OK;
@@ -352,50 +358,50 @@ async Task SendPassengerRegistrationStatus(PassengerResponse p, string passenger
 app.MapPost("/ticket-office/return-ticket", async context =>
 {
     PassengerResponse resp;
-    var request = await context.Request.ReadFromJsonAsync<List<PassengerEntry>>();
+    var request = await context.Request.ReadFromJsonAsync<Dictionary<string, PassengerEntry>>();
     if (request == null)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
         Console.WriteLine("Invalid request data.");
-        resp = new PassengerResponse(-1, StatusCodes.Status404NotFound);
+        resp = new PassengerResponse(-1, "Unsuccessful");
         return;
     }
     foreach (var psg in request)
     {
-        if (!IfBuyer(psg.PassengerID))
+        if (!IfBuyer(psg.Value.PassengerID))
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             Console.WriteLine("Ticket not found or forged.");
-            resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+            resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
             return;
         }
 
-        var flight = GetFlightByID(psg.FlightID, Flights);
+        var flight = GetFlightByID(psg.Value.FlightID, Flights);
         if (flight == null)
         {
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             Console.WriteLine("Flight not found.");
-            resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+            resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
             return;
         }
 
         var simulationTime = await GetSimulationTime();
-        if (simulationTime >= flight.DepartureTime.AddHours(-3)) // Возврат за 3 часа до вылета
+        if (simulationTime >= flight.GetDateTime().AddHours(-3)) // Возврат за 3 часа до вылета
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             Console.WriteLine("Unable to return ticket: less than 3 hours before departure.");
-            resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status404NotFound);
+            resp = new PassengerResponse(psg.Value.PassengerID, "Unsuccessful");
             return;
         }
 
         // Возврат билета
-        BuyerIDs.Remove(psg.PassengerID);
+        BuyerIDs.Remove(psg.Value.PassengerID);
         flight.AvailableSeats++;
         string returnModuleUrl = $"http://{PassengerModuleUrl}/passenger/available-flights";
-        resp = new PassengerResponse(psg.PassengerID, StatusCodes.Status200OK);
+        resp = new PassengerResponse(psg.Value.PassengerID, "Successful");
         await SendReturnStatus(resp, returnModuleUrl);
         context.Response.StatusCode = StatusCodes.Status200OK;
-        Console.WriteLine($"Ticket for passenger {psg.PassengerID} returned successfully.");
+        Console.WriteLine($"Ticket for passenger {psg.Value.PassengerID} returned successfully.");
     }
 });
 
@@ -429,7 +435,7 @@ List<FlightInfo>GetAvailableFlights(DateTime curr)
     List<FlightInfo> res = new List<FlightInfo>();
     foreach (var flight in Flights)
     {
-        if (curr <= flight.DepartureTime.AddHours(-3)) res.Add(new FlightInfo(flight.Id, $"{flight.DepartureTime.AddHours(-3).ToString("hh")}:{flight.DepartureTime.AddHours(-3).ToString("mm")}", $"{flight.DepartureTime.ToString("hh")}:{flight.DepartureTime.ToString("mm")}"));
+        if (curr <= flight.GetDateTime().AddHours(-3)) res.Add(new FlightInfo(flight.Id, $"{flight.GetDateTime().AddHours(-3).ToString("hh")}:{flight.GetDateTime().AddHours(-3).ToString("mm")}", $"{flight.GetDateTime().ToString("hh")}:{flight.GetDateTime().ToString("mm")}"));
     }
     return res;
 }
@@ -449,6 +455,19 @@ app.MapGet("/", async context =>
 {
     Console.WriteLine("Welcome to the Ticket Office / Check-In module!");
     await context.Response.WriteAsync("Welcome to the Ticket Office / Check-In module!");
+    //PassengerResponse resp;
+    //List<PassengerEntry> rp = new List<PassengerEntry>();
+    //List<BaggageInfo> bg = new List<BaggageInfo>();
+    //List<FoodOrder> fo = new List<FoodOrder>();
+    //rp.Add(new PassengerEntry(111, 222));
+    //rp.Add(new PassengerEntry(444, 333));
+    //bg.Add(new BaggageInfo(111, 3,222));
+    //bg.Add(new BaggageInfo(444, 5, 333));
+    //fo.Add(new FoodOrder(111));
+    //fo.Add(new FoodOrder(333));
+    //await SendDataToService(null,bg);
+    //await context.Response.WriteAsJsonAsync(rp);
+
 });
 
 // Эндпоинт для получения новых рейсов от табло

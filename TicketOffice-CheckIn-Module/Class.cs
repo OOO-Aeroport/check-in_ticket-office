@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 
 namespace TicketOffice_CheckIn_Module
@@ -17,14 +18,23 @@ namespace TicketOffice_CheckIn_Module
     public class Flight
     {
         public int Id { get; set; }
-        public char Gate { get; set; }
-
-        public DateTime DepartureTime { get; set; }
+        public string DepartureTime { get; set; }
         public bool IsRegistrationOpen { get; set; }
         public int AvailableSeats { get; set; }
         public int AvailableBaggage { get; set; }
 
-        public bool IsSuitable(int baggageweight)
+        public DateTime GetDateTime()
+        {
+            string[]dts = DepartureTime.Split(':');
+            string shours = dts[0];
+            int.TryParse(shours, out int hours);
+            string sminutes = dts[1];
+            int.TryParse(shours, out int minutes);
+            DateTime res = new DateTime(0,0,0,hours,minutes,0,0,0);
+            return res;
+        }
+
+        public bool IsSuitable(float baggageweight)
         {
             if (baggageweight >= AvailableBaggage && AvailableSeats > 0) return true;
             return false;
@@ -57,6 +67,11 @@ namespace TicketOffice_CheckIn_Module
     {
         public int FlightID { get; set; }
         public int Quantity { get; set; }
+        public FoodOrder(int fid) 
+        { 
+            FlightID = fid; 
+            Quantity = 0; 
+        }
 
     }
 
@@ -65,14 +80,15 @@ namespace TicketOffice_CheckIn_Module
     {
         public int PassengerID { get; set; }
 
-        public int BaggageWeight { get; set; }
+        public float BaggageWeight { get; set; }
         public int FlightID { get; set; }
 
-        public BuyRequest(int passengerId, int bw, int fid)
+        [JsonConstructor]
+        public BuyRequest(int passengerID, float baggageWeight, int flightID)
         {
-            PassengerID = passengerId;
-            BaggageWeight = bw;
-            FlightID = fid;
+            PassengerID = passengerID;
+            BaggageWeight = baggageWeight;
+            FlightID = flightID;
         }
     }
 
@@ -92,9 +108,9 @@ namespace TicketOffice_CheckIn_Module
     public class PassengerResponse
     {
         public int PassengerID { get; set; }
-        public int Status { get; set; }
+        public string Status { get; set; }
 
-        public PassengerResponse(int passengerId, int ststus)
+        public PassengerResponse(int passengerId, string ststus)
         {
             PassengerID = passengerId;
             Status = ststus;
@@ -106,11 +122,11 @@ namespace TicketOffice_CheckIn_Module
     {
         public int PassengerID { get; set; }
         public int FlightID {  get; set; }
-
-        public PassengerEntry(int passengerId, int flightId)
+        [JsonConstructor]
+        public PassengerEntry(int passengerID, int flightID)
         {
-            PassengerID = passengerId;
-            FlightID = flightId;
+            PassengerID = passengerID;
+            FlightID = flightID;
         }
     }
 
