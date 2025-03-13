@@ -79,9 +79,9 @@ namespace TicketOffice_CheckIn_Module
     public class FlightInfo
     {
         public int FlightID { get; set; }
-        public DateTime CheckinStart { get; set; }
-        public DateTime DepartureTime { get; set;}
-        public FlightInfo(int flightID, DateTime checkinStart, DateTime departureTime)
+        public string CheckinStart { get; set; }
+        public string DepartureTime { get; set;}
+        public FlightInfo(int flightID, string checkinStart, string departureTime)
         {
             FlightID = flightID;
             CheckinStart = checkinStart;

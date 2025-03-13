@@ -429,7 +429,7 @@ List<FlightInfo>GetAvailableFlights(DateTime curr)
     List<FlightInfo> res = new List<FlightInfo>();
     foreach (var flight in Flights)
     {
-        if (curr <= flight.DepartureTime.AddHours(-3)) res.Add(new FlightInfo(flight.Id, flight.DepartureTime.AddHours(-3), flight.DepartureTime));
+        if (curr <= flight.DepartureTime.AddHours(-3)) res.Add(new FlightInfo(flight.Id, $"{flight.DepartureTime.AddHours(-3).ToString("hh")}:{flight.DepartureTime.AddHours(-3).ToString("mm")}", $"{flight.DepartureTime.ToString("hh")}:{flight.DepartureTime.ToString("mm")}"));
     }
     return res;
 }
@@ -439,7 +439,8 @@ app.MapGet("/ticket-office/available-flights", async context =>
 {
     var simulationTime = await GetSimulationTime();
     List<FlightInfo> availableFlights = GetAvailableFlights(simulationTime); //список рейсов на которые можно купить билеты
-
+    //List<FlightInfo> availableFlights = new List<FlightInfo>();
+    //availableFlights.Add(new FlightInfo(111,$"{DateTime.Now.AddHours(-3).ToString("hh")}:{DateTime.Now.AddHours(-3).ToString("mm")}",$"{DateTime.Now.ToString("hh")}:{DateTime.Now.ToString("mm")}"));
     await context.Response.WriteAsJsonAsync(availableFlights);
 });
 
