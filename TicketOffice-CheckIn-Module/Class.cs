@@ -10,9 +10,6 @@ namespace TicketOffice_CheckIn_Module
     {
         public int Id { get; set; }
         public float BaggageWeight { get; set; }
-        public bool Registration { get; set; }
-        public string ClassPreference { get; set; }
-        public string FoodPreference { get; set; }
     }
     /// <summary>
     /// Структура данных полета
@@ -22,134 +19,95 @@ namespace TicketOffice_CheckIn_Module
         public int Id { get; set; }
         public char Gate { get; set; }
 
-        public DateTime RegistrationEndTime { get; set; }
         public DateTime DepartureTime { get; set; }
         public bool IsRegistrationOpen { get; set; }
-        public int AvailableSeatsEconomy { get; set; }
-        public int AvailableSeatsBusiness { get; set; }
+        public int AvailableSeats { get; set; }
+        public int AvailableBaggage { get; set; }
 
-        public void ChangeSeatsByClass(string cl, int num)
+        public bool IsSuitable(int baggageweight)
         {
-            if (cl == "Economy")
-            {
-                AvailableSeatsEconomy += num;
-            }
-            else if (cl == "Business")
-            {
-                AvailableSeatsBusiness += num;
-            }
-            else
-            {
-                if (AvailableSeatsEconomy > 0) AvailableSeatsEconomy += num;
-                else if (AvailableSeatsBusiness > 0) { AvailableSeatsBusiness += num;}
-            }
-        }
-        public bool IsSuitable(Passenger p)
-        {
-            if (p.ClassPreference != null) 
-            {
-                if (p.ClassPreference == "Economy")
-                {
-                    if (AvailableSeatsEconomy > 0) { return true; }
-                    else { return false; }
-                }
-                if (p.ClassPreference == "Business")
-                {
-                    if (AvailableSeatsBusiness >  0) { return true; }
-                    else { return false; }
-                }
-            }
-            return true;
+            if (baggageweight >= AvailableBaggage && AvailableSeats > 0) return true;
+            return false;
         }
     }
 
-    /// <summary>
-    /// структура данных билета
-    /// </summary>
-    public class Ticket
-    {
-        public int PassengerID { get; set; }
-        public int FlightID { get; set; }
-        public char Gate { get; set; }
-        public string Class { get; set; }
-        public string Food { get; set; }
-
-
-        public Ticket (int pId, int flId, char g, string c, string f)
-        {
-            PassengerID = pId;
-            FlightID = flId;
-            Gate = g;
-            Class = c;
-            Food = f;
-        }
-    }
-
-    public class RegistrationStatus
-    {
-        public int PassengerId { get; set; }
-        public bool IsRegistered { get; set; }
-    }
 
     /// <summary>
     /// структура данных багажа
     /// </summary>
     public class BaggageInfo
     {
+        public int FlightID { get; set; }
         public int PassengerID { get; set; }
         public float BaggageWeight { get; set; }
-        public BaggageInfo(int passengerId, float baggageWeight)
+        public BaggageInfo(int passengerId, float baggageWeight, int fid)
         {
             PassengerID = passengerId;
             BaggageWeight = baggageWeight;
+
         }
     }
     
     /// <summary>
     /// структура данных еды
     /// </summary>
-    public class FoodInfo
-    {
-        public string FoodType { get; set; }
-        public int Quantity { get; set; }
-    }
+
 
     public class FoodOrder
     {
         public int FlightID { get; set; }
-        public FoodInfo Food { get; set; }
+        public int Quantity { get; set; }
+
     }
 
-    public class PassengerRequest
-    {
-        public int PassengerID { get; set; }
-        public Ticket Ticket { get; set; }
-
-        public PassengerRequest(int passengerId, Ticket ticket)
-        {
-            PassengerID = passengerId;
-            Ticket = ticket;
-        }
-    }
 
     public class BuyRequest
     {
-        public Passenger Passenger { get; set; }
+        public int PassengerID { get; set; }
+
+        public int BaggageWeight { get; set; }
         public int FlightID { get; set; }
 
-        public BuyRequest(Passenger p, int flightid)
+        public BuyRequest(int passengerId, int bw, int fid)
         {
-            Passenger = p;
-            FlightID = flightid;
+            PassengerID = passengerId;
+            BaggageWeight = bw;
+            FlightID = fid;
         }
     }
 
-    public class RegisteredPassengersEntry
+    public class FlightInfo
+    {
+        public int FlightID { get; set; }
+        public DateTime CheckinStart { get; set; }
+        public DateTime DepartureTime { get; set;}
+        public FlightInfo(int flightID, DateTime checkinStart, DateTime departureTime)
+        {
+            FlightID = flightID;
+            CheckinStart = checkinStart;
+            DepartureTime = departureTime;
+        }
+    }
+
+    public class PassengerResponse
+    {
+        public int PassengerID { get; set; }
+        public int Status { get; set; }
+
+        public PassengerResponse(int passengerId, int ststus)
+        {
+            PassengerID = passengerId;
+            Status = ststus;
+        }
+
+    }
+
+    public class PassengerEntry
     {
         public int PassengerID { get; set; }
         public int FlightID {  get; set; }
 
-        public RegisteredPassengersEntry(int passengerId, int flightId)
+        public PassengerEntry(int passengerId, int flightId)
         {
             PassengerID = passengerId;
             FlightID = flightId;
