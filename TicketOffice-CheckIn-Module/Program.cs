@@ -56,7 +56,7 @@ async Task<DateTime> GetSimulationTime()
     }
 }
 
-// ѕроверка завершени€ регистрации дл€ всех рейсов
+// ѕроверка завершени€ регистрации дл€ всех рейсов 
 async Task CheckRegistrationStatus()
 {
     var simulationTime = await GetSimulationTime();
