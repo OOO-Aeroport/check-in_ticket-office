@@ -14,7 +14,7 @@ using TicketOffice_CheckIn_Module;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Настройка Kestrel
+//Настройка Kestrel
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.ListenAnyIP(5555); // Слушаем все IP-адреса на порту 5555
@@ -124,7 +124,7 @@ async Task SendRegistrationCompletionData(Flight flight)
     var baggageForFlight = GetBaggageByFlight(flight.id);
 
     // Отправляем данные в табло
-    string departureBoardUrl = $"http://{DepartureBoardUrl}/registration-completion";
+    string departureBoardUrl = $"http://{DepartureBoardUrl}/departure-board/flights/{flight.id}/passengers";
     await SendDataToService(departureBoardUrl, new { registeredPassengers });
     Console.WriteLine($"Departure table data sent successfully.");
 
@@ -182,12 +182,12 @@ void AddFoodOrder(int id)
 }
 
 //Найти зарегистрированных пассажиров по рейсу
-List<PassengerEntry> GetRegisteredPassengersByFlight(int flightID)
+List<object> GetRegisteredPassengersByFlight(int flightID)
 {
-    List<PassengerEntry> res = new List<PassengerEntry>();
+    List<object> res = new List<object>();
     for (int i = 0; i < RegisteredPassengers.Count; i++)
     {
-        if (RegisteredPassengers[i].flight_id == flightID) res.Add(RegisteredPassengers[i]);
+        if (RegisteredPassengers[i].flight_id == flightID) res.Add(new { RegisteredPassengers[i].passenger_id });
     }
     if (res.Count > 0) Console.WriteLine($"Found RegisteredPassengers for flight {flightID}");
     return res;
@@ -561,15 +561,15 @@ app.MapGet("/", async context =>
     Console.WriteLine("Welcome to the Ticket Office / Check-In module!");
     await context.Response.WriteAsync("Welcome to the Ticket Office / Check-In module!");
     //PassengerResponse resp;
-    //List<PassengerEntry> rp = new List<PassengerEntry>();
+    //List<object> passengers = new List<object>();
     //List<BaggageInfo> bg = new List<BaggageInfo>();
-    List<FoodOrder> fo = new List<FoodOrder>();
-    //rp.Add(new PassengerEntry(111, 222));
-    //rp.Add(new PassengerEntry(444, 333));
+    //List<FoodOrder> fo = new List<FoodOrder>();
+    //passengers.Add(new { passengerId = 1112 });
+    //passengers.Add(new { passengerId = 7786 });
     //bg.Add(new BaggageInfo(111, 3,222));
     //bg.Add(new BaggageInfo(444, 5, 333));
-    fo.Add(new FoodOrder(111));
-    fo.Add(new FoodOrder(333));
+    //fo.Add(new FoodOrder(111));
+    //fo.Add(new FoodOrder(333));
     // Формируем данные для службы питания в нужном формате
     //var cateringData = new
     //{
@@ -579,7 +579,7 @@ app.MapGet("/", async context =>
     //        quantity = order.quantity
     //    }).ToList()
     //};
-    //await SendDataToService(null, cateringData);
+    //await SendDataToService($"http://{DepartureBoardUrl}/departure-board/flights/{50}/passengers", passengers);
     //await context.Response.WriteAsJsonAsync(rp);
 
 });
@@ -614,16 +614,16 @@ app.MapPost("ticket-office/flights", async context =>
     await context.Response.WriteAsync("Flights updated successfully.");
 });
 
-var timer = new System.Timers.Timer(1000); // Проверка каждые полминуты симуляции
+var timer = new System.Timers.Timer(2000); // Проверка каждую минуту симуляции
 timer.Elapsed += async (sender, e) =>
 {
     try
     {
         // Получаем текущее время симуляции
-        var simulationTime = await GetSimulationTime();
+        //var simulationTime = await GetSimulationTime();
 
         // Выводим время симуляции в консоль
-        Console.WriteLine($"Current simulation time: {simulationTime}");
+        //Console.WriteLine($"Current simulation time: {simulationTime}");
 
         // Проверяем статус регистрации
         await CheckRegistrationStatus();

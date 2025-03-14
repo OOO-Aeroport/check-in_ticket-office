@@ -10,10 +10,14 @@ namespace TicketOffice_CheckIn_Module
     /// </summary>
     public class Flight
     {
+        [JsonPropertyName("id")]
         public int id { get; set; }
+        //[JsonPropertyName("departure_time")]
         public DateTime departureTime { get; set; }
         public bool IsRegistrationOpen { get; set; }
+        //[JsonPropertyName("seats_available")]
         public int seatsAvailable { get; set; }
+        //[JsonPropertyName("baggage_available")]
         public int baggageAvailable { get; set; }
 
         //public DateTime GetDateTime()
@@ -80,17 +84,14 @@ namespace TicketOffice_CheckIn_Module
 
     public class BuyRequest
     {
+        [JsonPropertyName("passenger_id")]
         public int passenger_id { get; set; }
+        [JsonPropertyName("flight_id")]
         public int flight_id { get; set; }
+        [JsonPropertyName("baggage_weight")]
+
         public int baggage_weight { get; set; }
 
-        [JsonConstructor]
-        public BuyRequest(int baggage_weight, int flight_id, int passenger_id)
-        {
-            this.passenger_id = passenger_id;
-            this.baggage_weight = baggage_weight;
-            this.flight_id = flight_id;
-        }
     }
 
     public class FlightInfo
@@ -130,5 +131,6 @@ namespace TicketOffice_CheckIn_Module
             this.flight_id = flight_id;
         }
     }
+
 
 }
