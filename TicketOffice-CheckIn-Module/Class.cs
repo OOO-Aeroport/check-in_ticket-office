@@ -4,40 +4,42 @@ using System.Xml.Linq;
 
 namespace TicketOffice_CheckIn_Module
 {
-    /// <summary>
-    /// структура данных пассажира
-    /// </summary>
-    public class Passenger
-    {
-        public int Id { get; set; }
-        public float BaggageWeight { get; set; }
-    }
+
     /// <summary>
     /// Структура данных полета
     /// </summary>
     public class Flight
     {
-        public int Id { get; set; }
-        public string DepartureTime { get; set; }
+        public int id { get; set; }
+        public DateTime departureTime { get; set; }
         public bool IsRegistrationOpen { get; set; }
-        public int AvailableSeats { get; set; }
-        public int AvailableBaggage { get; set; }
+        public int seatsAvailable { get; set; }
+        public int baggageAvailable { get; set; }
 
-        public DateTime GetDateTime()
-        {
-            string[]dts = DepartureTime.Split(':');
-            string shours = dts[0];
-            int.TryParse(shours, out int hours);
-            string sminutes = dts[1];
-            int.TryParse(shours, out int minutes);
-            DateTime res = new DateTime(0,0,0,hours,minutes,0,0,0);
-            return res;
-        }
+        //public DateTime GetDateTime()
+        //{
+        //    string[]dts = DepartureTime.Split(':');
+        //    string shours = dts[0];
+        //    int.TryParse(shours, out int hours);
+        //    string sminutes = dts[1];
+        //    int.TryParse(shours, out int minutes);
+        //    DateTime res = new DateTime(0,0,0,hours,minutes,0,0,0);
+        //    return res;
+        //}
 
         public bool IsSuitable(float baggageweight)
         {
-            if (baggageweight >= AvailableBaggage && AvailableSeats > 0) return true;
+            if (baggageweight >= baggageAvailable && seatsAvailable > 0) return true;
             return false;
+        }
+        [JsonConstructor]
+        public Flight(int id, DateTime departureTime, bool isRegistrationOpen, int seatsAvailable, int baggageAvailable)
+        {
+            this.id = id;
+            this.departureTime = departureTime;
+            this.IsRegistrationOpen = isRegistrationOpen;
+            this.seatsAvailable = seatsAvailable;
+            this.baggageAvailable = baggageAvailable;
         }
     }
 
@@ -65,12 +67,12 @@ namespace TicketOffice_CheckIn_Module
 
     public class FoodOrder
     {
-        public int FlightID { get; set; }
-        public int Quantity { get; set; }
+        public int flight_id { get; set; }
+        public int quantity { get; set; }
         public FoodOrder(int fid) 
         { 
-            FlightID = fid; 
-            Quantity = 0; 
+            flight_id = fid; 
+            quantity = 0; 
         }
 
     }
@@ -78,17 +80,16 @@ namespace TicketOffice_CheckIn_Module
 
     public class BuyRequest
     {
-        public int PassengerID { get; set; }
-
-        public float BaggageWeight { get; set; }
-        public int FlightID { get; set; }
+        public int passenger_id { get; set; }
+        public int flight_id { get; set; }
+        public int baggage_weight { get; set; }
 
         [JsonConstructor]
-        public BuyRequest(int passengerID, float baggageWeight, int flightID)
+        public BuyRequest(int baggage_weight, int flight_id, int passenger_id)
         {
-            PassengerID = passengerID;
-            BaggageWeight = baggageWeight;
-            FlightID = flightID;
+            this.passenger_id = passenger_id;
+            this.baggage_weight = baggage_weight;
+            this.flight_id = flight_id;
         }
     }
 
@@ -120,13 +121,13 @@ namespace TicketOffice_CheckIn_Module
 
     public class PassengerEntry
     {
-        public int PassengerID { get; set; }
-        public int FlightID {  get; set; }
+        public int passenger_id { get; set; }
+        public int flight_id {  get; set; }
         [JsonConstructor]
-        public PassengerEntry(int passengerID, int flightID)
+        public PassengerEntry(int passenger_id, int flight_id)
         {
-            PassengerID = passengerID;
-            FlightID = flightID;
+            this.passenger_id = passenger_id;
+            this.flight_id = flight_id;
         }
     }
 
