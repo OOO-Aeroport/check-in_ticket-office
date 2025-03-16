@@ -135,14 +135,14 @@ async Task SendRegistrationCompletionData(Flight flight)
         baggage = baggageForFlight
     };
 
-    // Отправляем данные в службу питания
-    //string cateringServiceUrl = $"http://{CateringServiceUrl}/food-orders";
-    //await SendDataToService(cateringServiceUrl, cateringData);
-    //Console.WriteLine($"Catering Service data sent successfully.");
+    // Отправляем данные в самолет
+    string planeURL = $"http://{PlaneUrl}/food-orders";
+    await SendDataToService(planeURL, registeredPassengers);
+    Console.WriteLine($"Plane data sent successfully.");
 
     // Отправляем данные в uno
-    string luggageServiceUrl = $"http://{UnoUrl}/transportation-bagg";
-    await SendDataToService(luggageServiceUrl, unoData);
+    string unoURL = $"http://{UnoUrl}/transportation-bagg";
+    await SendDataToService(unoURL, unoData);
     Console.WriteLine($"Uno data sent successfully.");
 }
 
@@ -605,31 +605,6 @@ app.MapGet("/", async context =>
 
 });
 
-/// эндпоинт для зареганных пассажиров
-app.MapGet("/check-in/registered-passengers/{flightId:int}", async context =>
-{
-    // Получаем flightId из маршрута
-    if (!int.TryParse(context.Request.RouteValues["flightId"]?.ToString(), out int flightId))
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await context.Response.WriteAsync("Invalid Flight ID. Flight ID must be an integer.");
-        return;
-    }
-    RegisteredPassengers.Add(new PassengerEntry(1111,flightId));
-    RegisteredPassengers.Add(new PassengerEntry(1112, flightId));
-    // Получаем данные о зарегистрированных пассажирах для указанного рейса
-    var passengersData = GetRegisteredPassengersByFlight(flightId);
-
-    if (passengersData == null || !passengersData.Any())
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        await context.Response.WriteAsync($"No passengers found for flight ID: {flightId}.");
-        return;
-    }
-
-    // Возвращаем данные в формате JSON
-    await context.Response.WriteAsJsonAsync(passengersData);
-});
 
 // Эндпоинт для получения новых рейсов от табло
 app.MapPost("ticket-office/flights", async context =>
