@@ -31,6 +31,10 @@ namespace TicketOffice_CheckIn_Module
         //    return res;
         //}
 
+        public string ToString()
+        {
+            return ($"{id},{departureTime},{IsRegistrationOpen},{seatsAvailable},{baggageAvailable}");
+        }
         public bool IsSuitable(float baggageweight)
         {
             if (baggageweight <= 500 && seatsAvailable > 0) return true; //!!!
@@ -42,8 +46,8 @@ namespace TicketOffice_CheckIn_Module
             this.id = id;
             this.departureTime = departureTime;
             this.IsRegistrationOpen = isRegistrationOpen;
-            this.seatsAvailable = 100;
-            this.baggageAvailable = 500;
+            this.seatsAvailable = seatsAvailable;
+            this.baggageAvailable = baggageAvailable;
         }
     }
 
@@ -54,13 +58,16 @@ namespace TicketOffice_CheckIn_Module
     public class BaggageInfo
     {
         public int FlightID { get; set; }
-        public int PassengerID { get; set; }
-        public float BaggageWeight { get; set; }
-        public BaggageInfo(int passengerId, float baggageWeight, int fid)
-        {
-            PassengerID = passengerId;
-            BaggageWeight = baggageWeight;
+        public int Quantity { get; set; }
 
+        public string ToString()
+        {
+            return ($"{FlightID},{Quantity}");
+        }
+        public BaggageInfo(int baggageQuantity, int fid)
+        {
+            Quantity = baggageQuantity;
+            FlightID = fid;
         }
     }
 
@@ -73,6 +80,10 @@ namespace TicketOffice_CheckIn_Module
     {
         public int flight_id { get; set; }
         public int quantity { get; set; }
+        public string ToString()
+        {
+            return ($"{flight_id},{quantity}");
+        }
         public FoodOrder(int fid)
         {
             flight_id = fid;
@@ -85,12 +96,16 @@ namespace TicketOffice_CheckIn_Module
     public class BuyRequest
     {
         [JsonPropertyName("passenger_id")]
-        public int passenger_id { get; set; }
+        public int passengerId { get; set; }
         [JsonPropertyName("flight_id")]
-        public int flight_id { get; set; }
-        [JsonPropertyName("baggage_weight")]
+        public int flightId { get; set; }
+        [JsonPropertyName("baggage_quantity")]
+        public int baggageQuantity { get; set; }
 
-        public int baggage_weight { get; set; }
+        public string ToString()
+        {
+            return ($"{passengerId},{flightId},{baggageQuantity}");
+        }
 
     }
 
@@ -105,6 +120,11 @@ namespace TicketOffice_CheckIn_Module
             CheckinStart = checkinStart;
             DepartureTime = departureTime;
         }
+
+        public string ToString()
+        {
+            return ($"{FlightID},{CheckinStart},{DepartureTime}");
+        }
     }
 
     public class PassengerResponse
@@ -112,10 +132,15 @@ namespace TicketOffice_CheckIn_Module
         public int PassengerID { get; set; }
         public string Status { get; set; }
 
-        public PassengerResponse(int passengerId, string ststus)
+        public PassengerResponse(int passengerId, string status)
         {
             PassengerID = passengerId;
-            Status = ststus;
+            Status = status;
+        }
+
+        public string ToString()
+        {
+            return ($"{PassengerID},{Status}");
         }
 
     }
@@ -129,6 +154,11 @@ namespace TicketOffice_CheckIn_Module
         {
             this.passenger_id = passenger_id;
             this.flight_id = flight_id;
+        }
+
+        public string ToString()
+        {
+            return ($"{passenger_id},{flight_id}");
         }
     }
 
