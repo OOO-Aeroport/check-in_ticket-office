@@ -14,7 +14,7 @@ namespace TicketOffice_CheckIn_Module
         public int id { get; set; }
         //[JsonPropertyName("departure_time")]
         public DateTime departureTime { get; set; }
-        public bool IsRegistrationOpen { get; set; }
+        public int RegistrationState { get; set; }
         //[JsonPropertyName("seats_available")]
         public int seatsAvailable { get; set; }
         //[JsonPropertyName("baggage_available")]
@@ -33,7 +33,7 @@ namespace TicketOffice_CheckIn_Module
 
         public string ToString()
         {
-            return ($"{id},{departureTime},{IsRegistrationOpen},{seatsAvailable},{baggageAvailable}");
+            return ($"{id},{departureTime},{RegistrationState},{seatsAvailable},{baggageAvailable}");
         }
         public bool IsSuitable(float baggageweight)
         {
@@ -41,11 +41,11 @@ namespace TicketOffice_CheckIn_Module
             return false;
         }
         [JsonConstructor]
-        public Flight(int id, DateTime departureTime, bool isRegistrationOpen, int seatsAvailable, int baggageAvailable)
+        public Flight(int id, DateTime departureTime, int RegistrationState, int seatsAvailable, int baggageAvailable)
         {
             this.id = id;
             this.departureTime = departureTime;
-            this.IsRegistrationOpen = isRegistrationOpen;
+            this.RegistrationState = RegistrationState;
             this.seatsAvailable = seatsAvailable;
             this.baggageAvailable = baggageAvailable;
         }
@@ -162,5 +162,24 @@ namespace TicketOffice_CheckIn_Module
         }
     }
 
+    public class UnoD
+    {
+        public int flightId { get; set; }
 
+        public object passengers { get; set; }
+        public int food { get; set; }
+        public int baggage { get; set; }
+
+    }
+
+    public class Pass 
+    { 
+        public int passengerId { get; set; }
+    }
+
+    public class FlightStatus
+    {
+        public int FlightId { get; set; }
+        public bool Status { get; set; }
+    }
 }

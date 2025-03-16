@@ -39,79 +39,79 @@ List<FoodOrder> foodOrders = new List<FoodOrder>();
 
 
 // Получение текущего времени симуляции
-async Task<DateTime> GetSimulationTime()
-{
-    using (var httpClient = new HttpClient())
-    {
-        string dbu = $"http://{DepartureBoardUrl}/departure-board/time";
-        try
-        {
-            var response = await httpClient.GetAsync(dbu);
-            if (response.IsSuccessStatusCode)
-            {
-                string responseData = await response.Content.ReadAsStringAsync();
+//async Task<DateTime> GetSimulationTime()
+//{
+//    using (var httpClient = new HttpClient())
+//    {
+//        string dbu = $"http://{DepartureBoardUrl}/departure-board/time";
+//        try
+//        {
+//            var response = await httpClient.GetAsync(dbu);
+//            if (response.IsSuccessStatusCode)
+//            {
+//                string responseData = await response.Content.ReadAsStringAsync();
 
-                // Логируем полученные данные
-                //Console.WriteLine($"Response data: {responseData}");
+//                // Логируем полученные данные
+//                //Console.WriteLine($"Response data: {responseData}");
 
-                // Удаляем лишние символы (например, кавычки)
-                responseData = responseData.Trim('"');
+//                // Удаляем лишние символы (например, кавычки)
+//                responseData = responseData.Trim('"');
 
-                // Проверяем, что данные не пустые
-                if (string.IsNullOrEmpty(responseData))
-                {
-                    Console.WriteLine("Response data is empty or null.");
-                    throw new Exception("Empty or null response data.");
-                }
+//                // Проверяем, что данные не пустые
+//                if (string.IsNullOrEmpty(responseData))
+//                {
+//                    Console.WriteLine("Response data is empty or null.");
+//                    throw new Exception("Empty or null response data.");
+//                }
 
-                // Парсим строку с использованием правильного формата
-                if (DateTime.TryParseExact(responseData, "yyyy-MM-ddTHH:mm:ss.fffffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime res))
-                {
-                    return res;
-                }
-                else
-                {
-                    Console.WriteLine($"Failed to parse simulation time: {responseData}");
-                    throw new Exception("Invalid simulation time format.");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Departure board request error: {response.StatusCode}");
-                throw new Exception("Unable to get simulation time.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Departure board request error: {ex.Message}");
-            throw;
-        }
-    }
-}
+//                // Парсим строку с использованием правильного формата
+//                if (DateTime.TryParseExact(responseData, "yyyy-MM-ddTHH:mm:ss.fffffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime res))
+//                {
+//                    return res;
+//                }
+//                else
+//                {
+//                    Console.WriteLine($"Failed to parse simulation time: {responseData}");
+//                    throw new Exception("Invalid simulation time format.");
+//                }
+//            }
+//            else
+//            {
+//                Console.WriteLine($"Departure board request error: {response.StatusCode}");
+//                throw new Exception("Unable to get simulation time.");
+//            }
+//        }
+//        catch (Exception ex)
+//        {
+//            Console.WriteLine($"Departure board request error: {ex.Message}");
+//            throw;
+//        }
+//    }
+//}
 
 // Проверка завершения регистрации для всех рейсов 
-async Task CheckRegistrationStatus()
-{
-    var simulationTime = await GetSimulationTime();
-    foreach (var flight in Flights)
-    {
-        if (!flight.IsRegistrationOpen && simulationTime >= flight.departureTime.AddHours(-3))
-        {
-            // Открываем регистрацию
-            flight.IsRegistrationOpen = true;
-            Console.WriteLine($"Check-in for flight {flight.id} is open.");
-        }
-        if (flight.IsRegistrationOpen && simulationTime >= flight.departureTime.AddMinutes(-30))
-        {
-            // Завершаем регистрацию
-            flight.IsRegistrationOpen = false;
-            Console.WriteLine($"Check-in for flight {flight.id} closed.");
+//async Task CheckRegistrationStatus()
+//{
+//    var simulationTime = await GetSimulationTime();
+//    foreach (var flight in Flights)
+//    {
+//        if (!flight.IsRegistrationOpen && simulationTime >= flight.departureTime.AddHours(-3))
+//        {
+//            // Открываем регистрацию
+//            flight.IsRegistrationOpen = true;
+//            Console.WriteLine($"Check-in for flight {flight.id} is open.");
+//        }
+//        if (flight.IsRegistrationOpen && simulationTime >= flight.departureTime.AddMinutes(-30))
+//        {
+//            // Завершаем регистрацию
+//            flight.IsRegistrationOpen = false;
+//            Console.WriteLine($"Check-in for flight {flight.id} closed.");
 
-            // Отправляем данные в табло, службу питания и службу багажа
-            await SendRegistrationCompletionData(flight);
-        }
-    }
-}
+//            // Отправляем данные в табло, службу питания и службу багажа
+//            await SendRegistrationCompletionData(flight);
+//        }
+//    }
+//}
 
 // Отправка данных о завершении регистрации
 async Task SendRegistrationCompletionData(Flight flight)
@@ -124,25 +124,26 @@ async Task SendRegistrationCompletionData(Flight flight)
     Console.WriteLine(foodOrderForFlight.ToString());
     // Получаем список багажа
     int baggageForFlight = GetBaggageByFlight(flight.id);
-    //Console.WriteLine(foodOrderForFlight.ToString());
 
     // Формируем данные для uno в нужном формате
     var unoData = new
     {
         flightId = flight.id,
-        registeredPassengers,
+        passengers = registeredPassengers,
         food = foodOrderForFlight.quantity,
         baggage = baggageForFlight
     };
 
-    // Отправляем данные в самолет
-    string planeURL = $"http://{PlaneUrl}/food-orders";
-    await SendDataToService(planeURL, registeredPassengers);
+    // Отправляем данные в табло
+    //string DBURL = $"http://{DepartureBoardUrl}/reg_passengers/{flight.id}";
+    await SendDataToService($"http://localhost:5555/a", registeredPassengers);
+    //await SendDataToService(DBURL, registeredPassengers);
     Console.WriteLine($"Plane data sent successfully.");
 
-    // Отправляем данные в uno
-    string unoURL = $"http://{UnoUrl}/transportation-bagg";
-    await SendDataToService(unoURL, unoData);
+    // Отправляем данные в пассажиры
+    //string PURL = $"http://{PassengerModuleUrl}/transportation-bagg"; //поправить
+    await SendDataToService($"http://localhost:5555/a", registeredPassengers);
+    // await SendDataToService(PURL, registeredPassengers);
     Console.WriteLine($"Uno data sent successfully.");
 }
 
@@ -298,8 +299,8 @@ app.MapPost("/ticket-office/buy-ticket", async context =>
         }
 
         // Проверка времени покупки
-        var simulationTime = await GetSimulationTime();
-        if (simulationTime >= flight.departureTime.AddHours(-3)) // Покупка заканчивается за 3 часа до вылета
+        //var simulationTime = await GetSimulationTime();
+        if (flight.RegistrationState == 0) // Покупка заканчивается за 3 часа до вылета
         {
             Console.WriteLine("Ticket sale for this flight is closed.");
             lpr.Add(new PassengerResponse(psg.passengerId, "Unsuccessful"));
@@ -373,7 +374,7 @@ app.MapPost("/checkin/passenger", async context =>
         var passengerId = psg.passenger_id;
         var flight = GetFlightByID(psg.flight_id, Flights);
 
-        if (flight == null || !flight.IsRegistrationOpen)
+        if (flight == null || flight.RegistrationState !=1)
         {
             Console.WriteLine("Check-in for the flight is closed or the flight doesn't exist.");
             responses.Add(new PassengerResponse(psg.passenger_id, "Unsuccessful"));
@@ -381,8 +382,8 @@ app.MapPost("/checkin/passenger", async context =>
         }
 
         // Проверка времени регистрации
-        var simulationTime = await GetSimulationTime();
-        if (simulationTime >= flight.departureTime.AddMinutes(-30)) // Регистрация заканчивается в указанное время
+        //var simulationTime = await GetSimulationTime();
+        if (flight.RegistrationState !=1) // Регистрация заканчивается в указанное время
         {
             Console.WriteLine("Check-in for the flight is closed.");
             responses.Add(new PassengerResponse(psg.passenger_id, "Unsuccessful"));
@@ -469,8 +470,8 @@ app.MapPost("/ticket-office/return-ticket", async context =>
             continue;
         }
 
-        var simulationTime = await GetSimulationTime();
-        if (simulationTime >= flight.departureTime.AddHours(-3)) // Возврат за 3 часа до вылета
+        //var simulationTime = await GetSimulationTime();
+        if (flight.RegistrationState == 0) // Возврат за 3 часа до вылета
         {
             Console.WriteLine("Unable to return ticket: less than 3 hours before departure.");
             responses.Add(new PassengerResponse(psg.passenger_id, "Unsuccessful"));
@@ -532,8 +533,8 @@ app.MapGet("/ticket-office/available-flights", async context =>
 {
     //var simulationTime = await GetSimulationTime();
     var simulationTime = DateTime.Now;
-    Flights.Add(new Flight(111,DateTime.Now.AddHours(4),false,100,100));
-    Flights.Add(new Flight(222, DateTime.Now.AddHours(4), false, 100, 100));
+    Flights.Add(new Flight(111,DateTime.Now.AddHours(4),0,100,100));
+    Flights.Add(new Flight(222, DateTime.Now.AddHours(4), 0, 100, 100));
     List<FlightInfo> availableFlights = GetAvailableFlights(simulationTime); //список рейсов на которые можно купить билеты
     // Создаем список доступных рейсов
     //List<FlightInfo> availableFlights = new List<FlightInfo>
@@ -580,31 +581,56 @@ app.MapGet("/", async context =>
 {
     Console.WriteLine("Welcome to the Ticket Office / Check-In module!");
     //await context.Response.WriteAsync("Welcome to the Ticket Office / Check-In module!");
-    //PassengerResponse resp;
-    List<object> passengers = new List<object>();
-    //List<BaggageInfo> bg = new List<BaggageInfo>();
-    FoodOrder fo = new FoodOrder(111);
-    passengers.Add(new { passengerId = 1112 });
-    passengers.Add(new { passengerId = 7786 });
-    //bg.Add(new BaggageInfo(111, 3,222));
-    //bg.Add(new BaggageInfo(444, 5, 333));
-    // Формируем данные для службы питания в нужном формате
+    RegisteredPassengers.Add(new PassengerEntry(1112,11));
+    RegisteredPassengers.Add(new PassengerEntry(1113, 11));
+    var registeredPassengers = GetRegisteredPassengersByFlight(11);
+    Baggage.Add(new BaggageInfo(3,11));
+    Baggage.Add(new BaggageInfo(4, 11));
+    var bagginf = GetBaggageByFlight(11);
+    foodOrders.Add(new FoodOrder(11));
+    AddFoodOrder(11);
+    var finf = GetFoodOrderByFlight(11);
     // Формируем данные для uno в нужном формате
     var unoData = new
     {
-        flightId = 1111,
-        passengers,
-        food = 12,
-        baggage = 23
+        flightId = 11,
+        passengers = registeredPassengers,
+        food = finf,
+        baggage = bagginf
     };
+
+    SendRegistrationCompletionData(new Flight(11,DateTime.Now,2,100,100));
     //await SendDataToService($"http://{DepartureBoardUrl}/departure-board/flights/{7}/passengers", passengers);
-    //await SendDataToService($"http://{CateringServiceUrl}/food-orders", cateringData);
+    //await SendDataToService($"http://localhost:5555/a", unoData);
+
+    //var request = await context.Request.ReadFromJsonAsync<List>);
+
     //await SendDataToService($"http://{LuggageServiceUrl}/transportation-bagg", bg);
-    await context.Response.WriteAsJsonAsync(unoData);
+    //await context.Response.WriteAsJsonAsync(re);
 
 
 });
 
+app.MapPost("/check-in/completion", async context => ///!!!!!!
+{
+    var request = await context.Request.ReadFromJsonAsync<FlightStatus>();
+    var flight = GetFlightByID(request.FlightId, Flights);
+    if (request.Status == true)
+    {
+        flight.RegistrationState = 1;
+    }
+    else
+    {
+        flight.RegistrationState = 2;
+        SendRegistrationCompletionData(flight);
+    }
+    //foreach (var item in request)
+    //{
+    //    Console.WriteLine($"{item.passengerId}");
+    //}
+    Console.WriteLine($"{request}");
+}
+);
 
 // Эндпоинт для получения новых рейсов от табло
 app.MapPost("ticket-office/flights", async context =>
@@ -627,7 +653,7 @@ app.MapPost("ticket-office/flights", async context =>
     {
         // Обновляем существующий рейс (если нужно)
         existingFlight.departureTime = newFlight.departureTime;
-        existingFlight.IsRegistrationOpen = newFlight.IsRegistrationOpen;
+        existingFlight.RegistrationState = newFlight.RegistrationState;
         existingFlight.seatsAvailable = newFlight.seatsAvailable;
         Console.WriteLine($"Flight updated: ID {newFlight.id}");
     }
