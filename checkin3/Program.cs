@@ -23,10 +23,10 @@ var app = builder.Build();
 
 
 //URL модулей
-string DepartureBoardUrl = "26.228.200.110:5555";
-string CateringServiceUrl = "";
-string LuggageServiceUrl = "26.132.135.106:5555";
-string PassengerModuleUrl = "26.49.89.37:5555";
+string DepartureBoardUrl = "192.168.35.244:5555";
+string CateringServiceUrl = "192.168.35.185:5555";
+string LuggageServiceUrl = "192.168.35.126:5555";
+string PassengerModuleUrl = "192.168.35.175:5555";
 
 
 // Хранилище данных
@@ -125,8 +125,16 @@ async Task SendRegistrationCompletionData(Flight flight)
 
     // Отправляем данные в табло
     string departureBoardUrl = $"http://{DepartureBoardUrl}/departure-board/flights/{flight.id}/passengers";
-    await SendDataToService(departureBoardUrl, new { registeredPassengers });
-    Console.WriteLine($"Departure table data sent successfully.");
+    if (registeredPassengers.Any())
+    {
+        await SendDataToService(departureBoardUrl, registeredPassengers);
+        Console.WriteLine($"Departure table data sent successfully.");
+    }
+    else
+    {
+        await SendDataToService(departureBoardUrl, new { registeredPassengers = new List<object>() });
+        Console.WriteLine($"No registered passengers to send for flight {flight.id}.");
+    }
 
     // Формируем данные для службы питания в нужном формате
     var cateringData = new
@@ -154,10 +162,13 @@ async Task SendDataToService(string url, object data)
 {
     using (var httpClient = new HttpClient())
     {
-        var jsonData = JsonSerializer.Serialize(data);
-        var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
 
-        var response = await httpClient.PostAsync(url, content);
+        var options = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        var response = await httpClient.PostAsJsonAsync(url, data, options);
         if (response.IsSuccessStatusCode)
         {
             Console.WriteLine($"Data sent successfully to {url}");
@@ -187,9 +198,21 @@ List<object> GetRegisteredPassengersByFlight(int flightID)
     List<object> res = new List<object>();
     for (int i = 0; i < RegisteredPassengers.Count; i++)
     {
-        if (RegisteredPassengers[i].flight_id == flightID) res.Add(new { passengerId = RegisteredPassengers[i].passenger_id });
+        if (RegisteredPassengers[i].flight_id == flightID)
+        {
+            res.Add(new { passengerId = RegisteredPassengers[i].passenger_id });
+        }
     }
-    if (res.Count > 0) Console.WriteLine($"Found RegisteredPassengers for flight {flightID}");
+
+    if (res.Count > 0)
+    {
+        Console.WriteLine($"Found RegisteredPassengers for flight {flightID}");
+    }
+    else
+    {
+        Console.WriteLine($"No registered passengers found for flight {flightID}");
+    }
+
     return res;
 }
 
@@ -398,11 +421,11 @@ async Task SendPassengerRegistrationStatus(List<PassengerResponse> responses, st
 
         if (response.IsSuccessStatusCode)
         {
-            Console.WriteLine("Статус регистрации успешно отправлен для всех пассажиров.");
+            Console.WriteLine("Check-in status sent successfully to all passengers.");
         }
         else
         {
-            Console.WriteLine($"Ошибка: {response.StatusCode}");
+            Console.WriteLine($"Error: {response.StatusCode}");
         }
     }
 }
@@ -480,7 +503,7 @@ async Task SendReturnStatus(List<PassengerResponse> responses, string passengerM
 
         if (response.IsSuccessStatusCode)
         {
-            Console.WriteLine("Статус возврата успешно отправлен для всех пассажиров.");
+            Console.WriteLine("Return status sent successfully to all passengers.");
         }
         else
         {
@@ -500,24 +523,12 @@ List<FlightInfo> GetAvailableFlights(DateTime curr)
     return res;
 }
 
-///// Эндпоинт для выбора рейсов перед покупкой билетов
-//app.MapGet("/ticket-office/available-flights", async context =>
-//{
-//    var simulationTime = await GetSimulationTime();
-//    //List<FlightInfo> availableFlights = GetAvailableFlights(simulationTime); //список рейсов на которые можно купить билеты
-//    List<FlightInfo> availableFlights = new List<FlightInfo>();
-//    availableFlights.Add(new FlightInfo(111,DateTime.Now.AddHours(-3).ToString(),DateTime.Now.ToString()));
-//    availableFlights.Add(new FlightInfo(222, DateTime.Now.AddHours(-3).ToString(), DateTime.Now.ToString()));
-//    Console.WriteLine("done");
-//    string dep = $"http://{PassengerModuleUrl}/passenger/available-flights";
-
-//    await context.Response.WriteAsJsonAsync(availableFlights);
-//});
-
 /// Эндпоинт для выбора рейсов перед покупкой билетов
 app.MapGet("/ticket-office/available-flights", async context =>
 {
     var simulationTime = await GetSimulationTime();
+    Flights.Add(new Flight(111,DateTime.Now,false,100,100));
+    Flights.Add(new Flight(222, DateTime.Now, false, 100, 100));
     List<FlightInfo> availableFlights = GetAvailableFlights(simulationTime); //список рейсов на которые можно купить билеты
     // Создаем список доступных рейсов
     //List<FlightInfo> availableFlights = new List<FlightInfo>
@@ -541,12 +552,6 @@ async Task SendAvailableFlights(List<FlightInfo> flights, string passengerModule
 {
     using (var httpClient = new HttpClient())
     {
-
-        Flights.Add(new Flight(7, (await GetSimulationTime()).AddHours(4), false, 100, 100));
-        Flights.Add(new Flight(6, (await GetSimulationTime()).AddHours(5), false, 100, 100));
-        Flights.Add(new Flight(5, (await GetSimulationTime()).AddHours(4), false, 100, 100));
-        Flights.Add(new Flight(4, (await GetSimulationTime()).AddHours(4), false, 100, 100));
-
         // Сериализуем список рейсов в JSON
         var jsonData = JsonSerializer.Serialize(flights);
         var content = new StringContent(jsonData, Encoding.UTF8, "application/json");
@@ -590,8 +595,6 @@ app.MapGet("/", async context =>
     //    }).ToList()
     //};
     await SendDataToService($"http://{DepartureBoardUrl}/departure-board/flights/{7}/passengers", passengers);
-    //await context.Response.WriteAsJsonAsync(rp);
-
 });
 
 // Эндпоинт для получения новых рейсов от табло

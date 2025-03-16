@@ -33,7 +33,7 @@ namespace TicketOffice_CheckIn_Module
 
         public bool IsSuitable(float baggageweight)
         {
-            if (baggageweight <= baggageAvailable && seatsAvailable > 0) return true; //!!!
+            if (baggageweight <= 500 && seatsAvailable > 0) return true; //!!!
             return false;
         }
         [JsonConstructor]
@@ -42,8 +42,8 @@ namespace TicketOffice_CheckIn_Module
             this.id = id;
             this.departureTime = departureTime;
             this.IsRegistrationOpen = isRegistrationOpen;
-            this.seatsAvailable = seatsAvailable;
-            this.baggageAvailable = baggageAvailable;
+            this.seatsAvailable = 100;
+            this.baggageAvailable = 500;
         }
     }
 
