@@ -24,9 +24,10 @@ var app = builder.Build();
 
 //URL модулей
 string DepartureBoardUrl = "192.168.35.244:5555";
-string PlaneUrl = "192.168.35.185:5555";
 string UnoUrl = "192.168.35.126:5555";
 string PassengerModuleUrl = "192.168.35.175:5555";
+//string PlaneUrl = "192.168.35.185:5555";
+
 
 
 // Хранилище данных
@@ -117,32 +118,32 @@ List<FoodOrder> foodOrders = new List<FoodOrder>();
 async Task SendRegistrationCompletionData(Flight flight)
 {
     // Получаем список зарегистрированных 
-    var registeredPassengers = GetRegisteredPassengersByFlight(flight.id);
+    var registeredPassengers = GetRegisteredPassengersByFlight(flight.FlightId);
     Console.WriteLine($"registeredPassengers: {registeredPassengers.ToString()}");
     // Получаем список заказов еды
-    var foodOrderForFlight = GetFoodOrderByFlight(flight.id);
+    var foodOrderForFlight = GetFoodOrderByFlight(flight.FlightId);
     Console.WriteLine(foodOrderForFlight.ToString());
     // Получаем список багажа
-    int baggageForFlight = GetBaggageByFlight(flight.id);
+    int baggageForFlight = GetBaggageByFlight(flight.FlightId);
 
     // Формируем данные для uno в нужном формате
     var unoData = new
     {
-        flightId = flight.id,
+        flightId = flight.AirplaneID,
         passengers = registeredPassengers,
         food = foodOrderForFlight.quantity,
         baggage = baggageForFlight
     };
 
-    // Отправляем данные в табло
-    //string DBURL = $"http://{DepartureBoardUrl}/reg_passengers/{flight.id}";
-    await SendDataToService($"http://localhost:5555/a", registeredPassengers);
-    //await SendDataToService(DBURL, registeredPassengers);
+    // Отправляем данные в Уно
+    //string UNOURL = $"http://{UnoUrl}/reg_passengers/{flight.id}";
+    await SendDataToService($"http://localhost:5555/a", unoData);
+    //await SendDataToService(UNOURL, unoData);
     Console.WriteLine($"Plane data sent successfully.");
 
     // Отправляем данные в пассажиры
     //string PURL = $"http://{PassengerModuleUrl}/transportation-bagg"; //поправить
-    await SendDataToService($"http://localhost:5555/a", registeredPassengers);
+    //await SendDataToService($"http://localhost:5555/a", registeredPassengers);
     // await SendDataToService(PURL, registeredPassengers);
     Console.WriteLine($"Uno data sent successfully.");
 }
@@ -249,7 +250,7 @@ Flight GetFlightByID(int id, List<Flight> Flights)
 {
     for (int i = 0; i < Flights.Count; i++)
     {
-        if (Flights[i].id == id) return Flights[i];
+        if (Flights[i].FlightId == id) return Flights[i];
     }
     return null;
 }
@@ -315,7 +316,7 @@ app.MapPost("/ticket-office/buy-ticket", async context =>
         }
 
         // Создаем билет
-        AddBaggage(flight.id, psg.baggageQuantity);
+        AddBaggage(flight.FlightId, psg.baggageQuantity);
         BuyerIDs.Add(psg.passengerId);
         flight.seatsAvailable--;
         flight.baggageAvailable -= psg.baggageQuantity;
@@ -397,7 +398,7 @@ app.MapPost("/checkin/passenger", async context =>
         }
         // Регистрируем пассажира
         RegisteredPassengers.Add(new PassengerEntry(psg.passenger_id, psg.flight_id));
-        AddFoodOrder(flight.id);
+        AddFoodOrder(flight.FlightId);
 
         // Добавляем успешный ответ
         responses.Add(new PassengerResponse(psg.passenger_id, "Successful"));
@@ -523,7 +524,7 @@ List<FlightInfo> GetAvailableFlights(DateTime curr)
     List<FlightInfo> res = new List<FlightInfo>();
     foreach (var flight in Flights)
     {
-        if (curr <= flight.departureTime.AddHours(-3)) res.Add(new FlightInfo(flight.id, flight.departureTime.AddHours(-3).ToString(), flight.departureTime.ToString()));
+        if (flight.RegistrationState == 0) res.Add(new FlightInfo(flight.FlightId));
     }
     return res;
 }
@@ -533,8 +534,8 @@ app.MapGet("/ticket-office/available-flights", async context =>
 {
     //var simulationTime = await GetSimulationTime();
     var simulationTime = DateTime.Now;
-    Flights.Add(new Flight(111,DateTime.Now.AddHours(4),0,100,100));
-    Flights.Add(new Flight(222, DateTime.Now.AddHours(4), 0, 100, 100));
+    Flights.Add(new Flight(11,1,100,100));
+    Flights.Add(new Flight(22,2, 100, 100));
     List<FlightInfo> availableFlights = GetAvailableFlights(simulationTime); //список рейсов на которые можно купить билеты
     // Создаем список доступных рейсов
     //List<FlightInfo> availableFlights = new List<FlightInfo>
@@ -581,6 +582,8 @@ app.MapGet("/", async context =>
 {
     Console.WriteLine("Welcome to the Ticket Office / Check-In module!");
     //await context.Response.WriteAsync("Welcome to the Ticket Office / Check-In module!");
+
+    var fl = GetFlightByID(11,Flights);
     RegisteredPassengers.Add(new PassengerEntry(1112,11));
     RegisteredPassengers.Add(new PassengerEntry(1113, 11));
     var registeredPassengers = GetRegisteredPassengersByFlight(11);
@@ -589,46 +592,55 @@ app.MapGet("/", async context =>
     var bagginf = GetBaggageByFlight(11);
     foodOrders.Add(new FoodOrder(11));
     AddFoodOrder(11);
-    var finf = GetFoodOrderByFlight(11);
+    var finf = GetFoodOrderByFlight(11).quantity;
     // Формируем данные для uno в нужном формате
     var unoData = new
     {
-        flightId = 11,
+        planeId = 11,
         passengers = registeredPassengers,
         food = finf,
         baggage = bagginf
     };
 
-    SendRegistrationCompletionData(new Flight(11,DateTime.Now,2,100,100));
+    SendRegistrationCompletionData(fl);
     //await SendDataToService($"http://{DepartureBoardUrl}/departure-board/flights/{7}/passengers", passengers);
     //await SendDataToService($"http://localhost:5555/a", unoData);
 
-    //var request = await context.Request.ReadFromJsonAsync<List>);
-
-    //await SendDataToService($"http://{LuggageServiceUrl}/transportation-bagg", bg);
-    //await context.Response.WriteAsJsonAsync(re);
+    //await SendDataToService($"http://localhost:5555/a", registeredPassengers);
+    //await context.Response.WriteAsJsonAsync(unoData);
 
 
 });
 
+app.MapPost("/a", async context =>
+{
+var request = await context.Request.ReadFromJsonAsync<UnoD>();
+Console.WriteLine( $"{request.planeId}, {request.baggage}, {request.food}");
+    List<Pass> passList = request.passengers;
+    foreach (var obj in request.passengers)
+    {
+        Pass i = obj;
+        Console.WriteLine(i.passengerId);
+    }
+}
+);
+
 app.MapPost("/check-in/completion", async context => ///!!!!!!
 {
-    var request = await context.Request.ReadFromJsonAsync<FlightStatus>();
-    var flight = GetFlightByID(request.FlightId, Flights);
-    if (request.Status == true)
-    {
-        flight.RegistrationState = 1;
-    }
-    else
-    {
-        flight.RegistrationState = 2;
-        SendRegistrationCompletionData(flight);
-    }
-    //foreach (var item in request)
-    //{
-    //    Console.WriteLine($"{item.passengerId}");
-    //}
-    Console.WriteLine($"{request}");
+    var request = await context.Request.ReadFromJsonAsync<int>();
+    var flight = GetFlightByID(request, Flights);
+    flight.RegistrationState = 2;
+    Console.WriteLine($"Check-in for flight {request} is over.");
+    SendRegistrationCompletionData(flight);
+}
+);
+
+app.MapPost("/check-in/start", async context => ///!!!!!!
+{
+    var request = await context.Request.ReadFromJsonAsync<int>();
+    var flight = GetFlightByID(request, Flights);
+    flight.RegistrationState = 1;
+    Console.WriteLine($"Check-in for flight {request} is open.");
 }
 );
 
@@ -643,19 +655,18 @@ app.MapPost("ticket-office/flights", async context =>
         return;
     }
 
-    var existingFlight = Flights.FirstOrDefault(f => f.id == newFlight.id);
+    var existingFlight = Flights.FirstOrDefault(f => f.FlightId == newFlight.FlightId);
     if (existingFlight == null)
     {
         Flights.Add(newFlight);
-        Console.WriteLine($"New flight added: ID {newFlight.id}, Departure: {newFlight.departureTime}");
+        Console.WriteLine($"New flight added: ID {newFlight.FlightId}. \nTicket purchase and return services for this flight are available.");
     }
     else
     {
         // Обновляем существующий рейс (если нужно)
-        existingFlight.departureTime = newFlight.departureTime;
         existingFlight.RegistrationState = newFlight.RegistrationState;
         existingFlight.seatsAvailable = newFlight.seatsAvailable;
-        Console.WriteLine($"Flight updated: ID {newFlight.id}");
+        Console.WriteLine($"Flight updated: ID {newFlight.FlightId}");
     }
 
     context.Response.StatusCode = StatusCodes.Status200OK;

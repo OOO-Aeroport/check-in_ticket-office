@@ -10,10 +10,11 @@ namespace TicketOffice_CheckIn_Module
     /// </summary>
     public class Flight
     {
-        [JsonPropertyName("id")]
-        public int id { get; set; }
+        [JsonPropertyName("flightId")]
+        public int FlightId { get; set; }
+        public int AirplaneID { get; set; }
         //[JsonPropertyName("departure_time")]
-        public DateTime departureTime { get; set; }
+        //public DateTime departureTime { get; set; }
         public int RegistrationState { get; set; }
         //[JsonPropertyName("seats_available")]
         public int seatsAvailable { get; set; }
@@ -33,7 +34,7 @@ namespace TicketOffice_CheckIn_Module
 
         public string ToString()
         {
-            return ($"{id},{departureTime},{RegistrationState},{seatsAvailable},{baggageAvailable}");
+            return ($"{FlightId},{RegistrationState},{seatsAvailable},{baggageAvailable}");
         }
         public bool IsSuitable(float baggageweight)
         {
@@ -41,11 +42,11 @@ namespace TicketOffice_CheckIn_Module
             return false;
         }
         [JsonConstructor]
-        public Flight(int id, DateTime departureTime, int RegistrationState, int seatsAvailable, int baggageAvailable)
+        public Flight(int flightId, int airplaneId, int seatsAvailable, int baggageAvailable)
         {
-            this.id = id;
-            this.departureTime = departureTime;
-            this.RegistrationState = RegistrationState;
+            this.FlightId = flightId;
+            this.AirplaneID = airplaneId;
+            this.RegistrationState = 0;
             this.seatsAvailable = seatsAvailable;
             this.baggageAvailable = baggageAvailable;
         }
@@ -112,18 +113,18 @@ namespace TicketOffice_CheckIn_Module
     public class FlightInfo
     {
         public int FlightID { get; set; }
-        public string CheckinStart { get; set; }
-        public string DepartureTime { get; set; }
-        public FlightInfo(int flightID, string checkinStart, string departureTime)
+        //public string CheckinStart { get; set; }
+        //public string DepartureTime { get; set; }
+        public FlightInfo(int flightID)
         {
             FlightID = flightID;
-            CheckinStart = checkinStart;
-            DepartureTime = departureTime;
+            //CheckinStart = checkinStart;
+            //DepartureTime = departureTime;
         }
 
         public string ToString()
         {
-            return ($"{FlightID},{CheckinStart},{DepartureTime}");
+            return ($"{FlightID}");
         }
     }
 
@@ -164,9 +165,9 @@ namespace TicketOffice_CheckIn_Module
 
     public class UnoD
     {
-        public int flightId { get; set; }
+        public int planeId { get; set; }
 
-        public object passengers { get; set; }
+        public List<Pass> passengers { get; set; }
         public int food { get; set; }
         public int baggage { get; set; }
 
