@@ -14,7 +14,8 @@ namespace TicketOffice_CheckIn_Module
         public int FlightId { get; set; }
         public int AirplaneID { get; set; }
         //[JsonPropertyName("departure_time")]
-        //public DateTime departureTime { get; set; }
+        public DateTime departureTime { get; set; }
+        public DateTime checkinendTime { get; set; }
         public int RegistrationState { get; set; }
         //[JsonPropertyName("seats_available")]
         public int seatsAvailable { get; set; }
@@ -42,10 +43,11 @@ namespace TicketOffice_CheckIn_Module
             return false;
         }
         [JsonConstructor]
-        public Flight(int flightId, int airplaneId, int seatsAvailable, int baggageAvailable)
+        public Flight(int flightId, int airplaneId,/* DateTime departureTime,*/ int seatsAvailable, int baggageAvailable)
         {
             this.FlightId = flightId;
             this.AirplaneID = airplaneId;
+            //this.departureTime = departureTime;
             this.RegistrationState = 0;
             this.seatsAvailable = seatsAvailable;
             this.baggageAvailable = baggageAvailable;
@@ -113,13 +115,13 @@ namespace TicketOffice_CheckIn_Module
     public class FlightInfo
     {
         public int FlightID { get; set; }
-        //public string CheckinStart { get; set; }
-        //public string DepartureTime { get; set; }
-        public FlightInfo(int flightID)
+        public string CheckinStart { get; set; }
+        public string DepartureTime { get; set; }
+        public FlightInfo(int flightID, string checkinStart, string departureTime)
         {
             FlightID = flightID;
-            //CheckinStart = checkinStart;
-            //DepartureTime = departureTime;
+            CheckinStart = checkinStart;
+            DepartureTime = departureTime;
         }
 
         public string ToString()
