@@ -79,22 +79,6 @@ namespace TicketOffice_CheckIn_Module
     /// </summary>
 
 
-    public class FoodOrder
-    {
-        public int flight_id { get; set; }
-        public int quantity { get; set; }
-        public string ToString()
-        {
-            return ($"{flight_id},{quantity}");
-        }
-        public FoodOrder(int fid)
-        {
-            flight_id = fid;
-            quantity = 0;
-        }
-
-    }
-
 
     public class BuyRequest
     {
