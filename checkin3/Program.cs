@@ -21,6 +21,8 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 });
 var app = builder.Build();
 
+// Добавление middleware для обслуживания статических файлов
+app.UseStaticFiles(); // Разрешает доступ к файлам в папке wwwroot
 
 //URL модулей
 string DepartureBoardUrl = "26.228.200.110:5555";
@@ -252,7 +254,7 @@ app.MapPost("/ticket-office/buy-ticket", async context =>
 
     foreach (var psg in request)
     {
-        Console.WriteLine(psg);
+        Console.WriteLine(psg.baggageQuantity);
 
         var flight = GetFlightByID(psg.flightId, Flights);
         if (flight != null ) Console.WriteLine(flight.FlightId);
@@ -408,7 +410,7 @@ async Task SendPassengerRegistrationStatus(List<PassengerResponse> responses, st
 // Возврат билета
 app.MapPost("/ticket-office/return-ticket", async context =>
 {
-    var request = await context.Request.ReadFromJsonAsync<List<PassengerEntry>>();
+    var request = await context.Request.ReadFromJsonAsync<List<BuyRequest>>();
     List<PassengerResponse> responses = new List<PassengerResponse>();
 
     if (request == null)
@@ -423,18 +425,18 @@ app.MapPost("/ticket-office/return-ticket", async context =>
     {
         PassengerResponse resp;
 
-        if (!IfBuyer(psg.passenger_id))
+        if (!IfBuyer(psg.passengerId))
         {
             Console.WriteLine("Ticket not found or forged.");
-            responses.Add(new PassengerResponse(psg.passenger_id, "Unsuccessful"));
+            responses.Add(new PassengerResponse(psg.passengerId, "Unsuccessful"));
             continue;
         }
 
-        var flight = GetFlightByID(psg.flight_id, Flights);
+        var flight = GetFlightByID(psg.flightId, Flights);
         if (flight == null)
         {
             Console.WriteLine("Flight not found.");
-            responses.Add(new PassengerResponse(psg.passenger_id, "Unsuccessful"));
+            responses.Add(new PassengerResponse(psg.passengerId, "Unsuccessful"));
             continue;
         }
 
@@ -442,17 +444,19 @@ app.MapPost("/ticket-office/return-ticket", async context =>
         if (flight.RegistrationState != 0) // Возврат за 3 часа до вылета
         {
             Console.WriteLine("Unable to return ticket: less than 3 hours before departure.");
-            responses.Add(new PassengerResponse(psg.passenger_id, "Unsuccessful"));
+            responses.Add(new PassengerResponse(psg.passengerId, "Unsuccessful"));
             continue;
         }
 
         // Возврат билета
-        BuyerIDs.Remove(psg.passenger_id);
+        BuyerIDs.Remove(psg.passengerId);
+        flight.baggageAvailable += psg.baggageQuantity;
         flight.seatsAvailable++;
-        resp = new PassengerResponse(psg.passenger_id, "Successful");
+        AddBaggage(psg.flightId, -psg.baggageQuantity);
+        resp = new PassengerResponse(psg.passengerId, "Successful");
         responses.Add(resp);
 
-        Console.WriteLine($"Ticket for passenger {psg.passenger_id} returned successfully.");
+        Console.WriteLine($"Ticket for passenger {psg.passengerId} returned successfully.");
     }
 
     // Отправка статуса возврата для всех пассажиров
@@ -542,27 +546,27 @@ List<FlightInfo> GetAvailableFlights()
 /// Дефолтный эндпоинт
 app.MapGet("/", async context =>
 {
-    Console.WriteLine("Welcome to the Ticket Office / Check-In module!");
-    //await context.Response.WriteAsync("Welcome to the Ticket Office / Check-In module!");
+    //Console.WriteLine("Welcome to the Ticket Office / Check-In module!");
+    ////await context.Response.WriteAsync("Welcome to the Ticket Office / Check-In module!");
 
-    var fl = GetFlightByID(11,Flights);
-    RegisteredPassengers.Add(new PassengerEntry(1112,11));
-    RegisteredPassengers.Add(new PassengerEntry(1113, 11));
-    var registeredPassengers = GetRegisteredPassengersByFlight(11);
-    Baggage.Add(new BaggageInfo(3,11));
-    Baggage.Add(new BaggageInfo(4, 11));
-    var bagginf = GetBaggageByFlight(11);
+    //var fl = GetFlightByID(11,Flights);
+    //RegisteredPassengers.Add(new PassengerEntry(1112,11));
+    //RegisteredPassengers.Add(new PassengerEntry(1113, 11));
+    //var registeredPassengers = GetRegisteredPassengersByFlight(11);
+    //Baggage.Add(new BaggageInfo(3,11));
+    //Baggage.Add(new BaggageInfo(4, 11));
+    //var bagginf = GetBaggageByFlight(11);
 
-    // Формируем данные для uno в нужном формате
-    var unoData = new
-    {
-        planeId = 11,
-        passengers = registeredPassengers,
-        food = registeredPassengers.Count,
-        baggage = bagginf
-    };
+    //// Формируем данные для uno в нужном формате
+    //var unoData = new
+    //{
+    //    planeId = 11,
+    //    passengers = registeredPassengers,
+    //    food = registeredPassengers.Count,
+    //    baggage = bagginf
+    //};
 
-    SendRegistrationCompletionData(fl);
+    //SendRegistrationCompletionData(fl);
 
 
 
@@ -650,6 +654,23 @@ app.MapPost("ticket-office/flights", async context =>
     context.Response.StatusCode = StatusCodes.Status200OK;
     await context.Response.WriteAsync("Flights updated successfully.");
 });
+
+app.MapGet("/ticket-office/available-flights", () =>
+{
+    // Возвращаем список доступных рейсов с дополнительной информацией
+    var availableFlights = Flights.Select(f => new
+    {
+        FlightId = f.FlightId, // Убедитесь, что это поле есть
+        AirplaneID = f.AirplaneID, // Убедитесь, что это поле есть
+        RegistrationState = f.RegistrationState, // Убедитесь, что это поле есть
+        seatsAvailable = f.seatsAvailable,
+        baggageAvailable = f.baggageAvailable
+    }).ToList();
+
+    return Results.Ok(availableFlights);
+});
+
+// Метод для получения количества заказов еды (заглушка)
 
 #region
 //var timer = new System.Timers.Timer(2000); // Проверка каждую минуту симуляции
