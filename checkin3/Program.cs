@@ -10,7 +10,8 @@ using System.Text;
 using System.Globalization; // Для CultureInfo
 using System.Threading.Tasks;
 using TicketOffice_CheckIn_Module;
-
+using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,41 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.ListenAnyIP(5555); // Слушаем все IP-адреса на порту 5555
 });
+
+// Добавление сервисов Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Ticket Office API",
+        Version = "v1",
+        Description = "API for managing ticket sales and check-in processes.",
+        Contact = new OpenApiContact
+        {
+            Name = "Anastasia",
+            Email = "kiseleva1411@mail.ru"
+        }
+    });
+
+    // Подключение XML-документации
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+});
+
 var app = builder.Build();
+
+// Включение Swagger и Swagger UI
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ticket Office API V1");
+    });
+}
+
 
 // Добавление middleware для обслуживания статических файлов
 app.UseStaticFiles(); // Разрешает доступ к файлам в папке wwwroot
